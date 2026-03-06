@@ -3,7 +3,7 @@ const POINTS_PER_TAP = 1;
 // Базовый URL для API. Если бэкенд крутится рядом с фронтом — оставьте пустым.
 // Если вы деплоите Node-сервер на отдельный домен, укажите здесь, например:
 // const API_BASE = "https://your-backend-host.com";
-const API_BASE = "";
+const API_BASE = "https://thetestserver-1.onrender.com/";
 
 const state = {
   // user
@@ -524,4 +524,5 @@ function escapeHtml(str) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
+
 
