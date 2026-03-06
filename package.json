@@ -1,0 +1,18 @@
+{
+  "name": "vibe-tap-miniapp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Telegram Mini App: tap-to-earn + TON Connect + leaderboard + referrals (with backend sync).",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "lowdb": "^7.0.1"
+  }
+}
+
