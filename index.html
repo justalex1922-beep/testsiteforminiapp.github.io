@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Vibe Tap TON Mini App</title>
+  <!-- Запрещаем зум на iOS и фиксируем масштаб -->
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  />
+  <meta name="format-detection" content="telephone=no" />
+
+  <!-- Telegram WebApp JS -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <!-- TonConnect UI -->
+  <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="theme-colorful">
+  <div id="app">
+    <!-- Верхняя панель с балансом и заголовком -->
+    <header class="app-header">
+      <div class="app-title">
+        <div class="app-logo-circle"></div>
+        <span>Vibe Tap</span>
+      </div>
+      <div class="points-display">
+        <span class="points-label">Поинты</span>
+        <span id="points-balance" class="points-value">0</span>
+      </div>
+    </header>
+
+    <!-- Основная область (экраны) -->
+    <main id="screen-container">
+      <!-- Содержимое экранов рендерится через app.js -->
+    </main>
+
+    <!-- Нижняя навигация -->
+    <nav class="bottom-nav">
+      <button class="nav-btn" data-screen="leaderboard" aria-label="Лидерборд и рефералы">
+        <span class="nav-icon trophy-icon"></span>
+        <span class="nav-label">Лидерборд</span>
+      </button>
+      <button class="nav-btn nav-btn-main active" data-screen="main" aria-label="Главный экран">
+        <span class="nav-icon main-icon"></span>
+        <span class="nav-label">Главная</span>
+      </button>
+      <button class="nav-btn" data-screen="wallet" aria-label="Кошелек TON">
+        <span class="nav-icon wallet-icon"></span>
+        <span class="nav-label">Кошелек</span>
+      </button>
+    </nav>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
+
