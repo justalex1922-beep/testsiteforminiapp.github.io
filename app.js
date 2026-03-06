@@ -38,6 +38,19 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupHaptics();
   setupNavigation();
 
+  // Prefer server sync...
+  await loadConfig();
+  await syncMe();
+
+  renderCurrentScreen();
+  updatePointsHeader();     
+  updateThemeByMiningState();
+});
+  }
+
+  setupHaptics();
+  setupNavigation();
+
   // Prefer server sync. If Telegram initData not available (e.g., desktop browser),
   // fallback to local state to keep demo working.
   await loadConfig();
@@ -347,33 +360,52 @@ function renderWalletScreen() {
   `;
 }
 
-function bindWalletScreenEvents() {
-  if (state.tonConnectUI) {
-    try {
-      state.tonConnectUI.uiOptions = {
-        uiPreferences: {
-          theme: document.body.classList.contains("theme-dark") ? "DARK" : "LIGHT",
-        },
-      };
-      //state.tonConnectUI.renderWalletsList("#tonconnect-container");
-    } catch (e) {
-      console.warn("TonConnect render failed", e);
-    }
+async function bindWalletScreenEvents() {
+  await ensureTonConnect();
+  if (!state.tonConnectUI) return;
+
+  try {
+    state.tonConnectUI.uiOptions = {
+      uiPreferences: {
+        theme: document.body.classList.contains("theme-dark") ? "DARK" : "LIGHT",
+      },
+    };
+    // Ничего больше не вызываем — TonConnect сам рисует кнопку
+    // в div#tonconnect-container по buttonRootId.
+  } catch (e) {
+    console.warn("TonConnect render failed", e);
   }
 }
 
-function initTonConnect() {
-  // Манифест лежит на GitHub Pages по вашему URL
+async function ensureTonConnect() {
+  if (state.tonConnectUI) return;
+
   const manifestUrl =
     "https://justalex1922-beep.github.io/testsiteforminiapp.github.io/tonconnect-manifest.json";
 
-  try {
-    if (typeof TON_CONNECT_UI === "undefined" || !TON_CONNECT_UI?.TonConnectUI) {
-      throw new Error("TON_CONNECT_UI global not found");
-    }
+  if (typeof TON_CONNECT_UI === "undefined" || !TON_CONNECT_UI?.TonConnectUI) {
+    console.warn("TON_CONNECT_UI global not found");
+    return;
+  }
 
-    state.tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-      manifestUrl,
+  state.tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+    manifestUrl,
+    buttonRootId: "tonconnect-container", // сюда TonConnect сам нарисует кнопку
+  });
+
+  const applyAccount = () => {
+    const account = state.tonConnectUI.account;
+    state.walletAddress = account?.address || "";
+    if (state.currentScreen === "wallet") {
+      renderCurrentScreen();
+    }
+  };
+
+  applyAccount();
+  state.tonConnectUI.onStatusChange(() => {
+    applyAccount();
+  });
+}
     });
 
     // Восстанавливаем сессию/следим за подключением
@@ -524,6 +556,7 @@ function escapeHtml(str) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
+
 
 
 
