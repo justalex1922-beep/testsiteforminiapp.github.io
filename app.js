@@ -358,8 +358,8 @@ function initTonConnect() {
     "https://justalex1922-beep.github.io/testsiteforminiapp.github.io/tonconnect-manifest.json";
 
   try {
-    state.tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-      manifestUrl,
+      state.tonConnectUI = new TonConnectUI.TonConnectUI({
+    manifestUrl: manifestUrl
     });
   } catch (e) {
     console.warn("TonConnect UI init failed", e);
@@ -496,5 +496,6 @@ function escapeHtml(str) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
+
 
 
