@@ -334,17 +334,21 @@ function renderWalletScreen() {
 }
 
 function bindWalletScreenEvents() {
-  if (state.tonConnectUI) {
-    try {
-      state.tonConnectUI.uiOptions = {
-        uiPreferences: {
-          theme: document.body.classList.contains("theme-dark") ? "DARK" : "LIGHT",
-        },
-      };
-      state.tonConnectUI.renderWalletsList("#tonconnect-container");
-    } catch (e) {
-      console.warn("TonConnect render failed", e);
-    }
+  if (!state.tonConnectUI) return;
+
+  try {
+    state.tonConnectUI.uiOptions = {
+      uiPreferences: {
+        theme: document.body.classList.contains("theme-dark")
+          ? "DARK"
+          : "LIGHT",
+      },
+    };
+
+    state.tonConnectUI.renderWalletsListButton("#tonconnect-container");
+
+  } catch (e) {
+    console.warn("TonConnect render failed", e);
   }
 }
 
@@ -492,4 +496,5 @@ function escapeHtml(str) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
+
 
