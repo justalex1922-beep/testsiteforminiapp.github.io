@@ -355,7 +355,7 @@ function bindWalletScreenEvents() {
           theme: document.body.classList.contains("theme-dark") ? "DARK" : "LIGHT",
         },
       };
-      state.tonConnectUI.renderWalletsList("#tonconnect-container");
+      //state.tonConnectUI.renderWalletsList("#tonconnect-container");
     } catch (e) {
       console.warn("TonConnect render failed", e);
     }
@@ -524,5 +524,6 @@ function escapeHtml(str) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
+
 
 
