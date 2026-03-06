@@ -1,0 +1,454 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background-color: #0b1824;
+  color: #ffffff;
+}
+
+#app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ТЕМЫ */
+
+body.theme-colorful {
+  --bg-main: linear-gradient(135deg, #0099ff 0%, #00c3ff 20%, #00e676 50%, #ffeb3b 70%, #ff1744 100%);
+  --bg-card: rgba(9, 23, 44, 0.85);
+  --accent: #00e676;
+  --accent-soft: rgba(0, 230, 118, 0.15);
+  --text-primary: #ffffff;
+  --text-muted: #d0d7e2;
+  --border-soft: rgba(255, 255, 255, 0.15);
+  --button-main-bg: radial-gradient(circle at 30% 30%, #ffffff 0, #ff1744 40%, #ff9100 70%, #00e676 100%);
+  --button-main-shadow: 0 0 30px rgba(255, 255, 255, 0.55);
+  --glow-gold: 0 0 16px rgba(255, 215, 0, 0.9);
+  --glow-silver: 0 0 14px rgba(192, 192, 192, 0.9);
+  --glow-bronze: 0 0 14px rgba(205, 127, 50, 0.9);
+  --nav-bg: rgba(4, 10, 20, 0.96);
+  --nav-border: rgba(255, 255, 255, 0.12);
+}
+
+body.theme-dark {
+  --bg-main: radial-gradient(circle at top, #222 0, #000 60%);
+  --bg-card: rgba(10, 10, 10, 0.95);
+  --accent: #ffffff;
+  --accent-soft: rgba(255, 255, 255, 0.12);
+  --text-primary: #ffffff;
+  --text-muted: #aaaaaa;
+  --border-soft: rgba(255, 255, 255, 0.22);
+  --button-main-bg: radial-gradient(circle at 30% 30%, #ffffff 0, #ffffff 100%);
+  --button-main-shadow: 0 0 25px rgba(255, 255, 255, 0.7);
+  --glow-gold: 0 0 18px rgba(255, 215, 0, 1);
+  --glow-silver: 0 0 18px rgba(192, 192, 192, 1);
+  --glow-bronze: 0 0 18px rgba(205, 127, 50, 1);
+  --nav-bg: rgba(0, 0, 0, 0.96);
+  --nav-border: rgba(255, 255, 255, 0.24);
+}
+
+/* ШАПКА */
+
+.app-header {
+  padding: 10px 16px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0));
+}
+
+.app-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-primary);
+}
+
+.app-logo-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff1744, #ffeb3b, #00e676, #0099ff);
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.45);
+  position: relative;
+  overflow: hidden;
+}
+
+.app-logo-circle::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("assets/c__Users_alnur_AppData_Roaming_Cursor_User_workspaceStorage_ed6939d859e048d577189b7892eb4b7e_images_TMPCS_1-d0345cd9-f12b-4be5-90ee-b90489360c57.png");
+  background-size: cover;
+  background-position: center;
+  opacity: 0.85;
+}
+
+.app-title span {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+/* БАЛАНС */
+
+.points-display {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  border: 1px solid var(--border-soft);
+}
+
+.points-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.points-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ОСНОВНАЯ ОБЛАСТЬ */
+
+#screen-container {
+  flex: 1;
+  padding: 16px 16px 88px;
+  background: var(--bg-main);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* ЭКРАН ГЛАВНЫЙ */
+
+.main-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tap-info {
+  margin-top: 12px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.tap-counter {
+  margin-top: 4px;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.tap-button-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tap-button {
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  background: var(--button-main-bg);
+  box-shadow: var(--button-main-shadow);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.08s ease-out, box-shadow 0.12s ease-out, filter 0.12s ease-out;
+}
+
+.tap-button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("assets/c__Users_alnur_AppData_Roaming_Cursor_User_workspaceStorage_ed6939d859e048d577189b7892eb4b7e_images_TMPCS_1-d0345cd9-f12b-4be5-90ee-b90489360c57.png");
+  background-size: cover;
+  background-position: center;
+  opacity: 0.95;
+  mix-blend-mode: screen;
+}
+
+.tap-button:active {
+  transform: scale(0.95);
+  box-shadow: 0 0 18px rgba(255, 255, 255, 0.55);
+}
+
+.tap-button.disabled {
+  cursor: default;
+  filter: grayscale(1);
+  opacity: 0.9;
+}
+
+.tap-remaining {
+  margin-bottom: 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* ЭКРАН КОШЕЛЬКА */
+
+.wallet-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card {
+  background: var(--bg-card);
+  border-radius: 18px;
+  padding: 14px 14px 16px;
+  border: 1px solid var(--border-soft);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.card-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.wallet-balance-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.wallet-balance-value {
+  font-size: 26px;
+  font-weight: 600;
+}
+
+.wallet-balance-caption {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+#tonconnect-container {
+  margin-top: 10px;
+}
+
+/* ЭКРАН ЛИДЕРБОРДА */
+
+.leaderboard-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.leaderboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.leaderboard-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.leaderboard-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.leaderboard-list {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 270px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.leaderboard-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  position: relative;
+}
+
+.leaderboard-row span {
+  font-size: 13px;
+}
+
+.leaderboard-rank {
+  font-weight: 600;
+  width: 24px;
+}
+
+.leaderboard-name {
+  flex: 1;
+  margin-left: 4px;
+}
+
+.leaderboard-points {
+  font-weight: 600;
+}
+
+.leaderboard-row.rank-1 {
+  border-color: #ffd700;
+  box-shadow: var(--glow-gold);
+}
+
+.leaderboard-row.rank-2 {
+  border-color: #c0c0c0;
+  box-shadow: var(--glow-silver);
+}
+
+.leaderboard-row.rank-3 {
+  border-color: #cd7f32;
+  box-shadow: var(--glow-bronze);
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(90deg, #00e676, #00c3ff);
+  color: #021018;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 10px 25px rgba(0, 230, 118, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(1px);
+  box-shadow: 0 8px 18px rgba(0, 230, 118, 0.4);
+}
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 8px 16px 14px;
+  background: var(--nav-bg);
+  border-top: 1px solid var(--nav-border);
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  backdrop-filter: blur(14px);
+}
+
+.nav-btn {
+  flex: 1;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 8px 4px;
+  font-size: 11px;
+  cursor: pointer;
+  gap: 2px;
+  transition: background 0.15s ease-out, color 0.15s ease-out, transform 0.08s ease-out;
+}
+
+.nav-btn-main {
+  margin-top: -10px;
+}
+
+.nav-btn-main .nav-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.nav-btn .nav-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  position: relative;
+  overflow: hidden;
+}
+
+.main-icon {
+  background: linear-gradient(135deg, #ff1744, #ffeb3b, #00e676, #0099ff);
+}
+
+.main-icon::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("assets/c__Users_alnur_AppData_Roaming_Cursor_User_workspaceStorage_ed6939d859e048d577189b7892eb4b7e_images_TMPCS_1-d0345cd9-f12b-4be5-90ee-b90489360c57.png");
+  background-size: cover;
+  background-position: center;
+  opacity: 0.9;
+}
+
+.wallet-icon {
+  background: radial-gradient(circle at 30% 30%, #ffffff 0, #00e676 40%, #0099ff 100%);
+}
+
+.wallet-icon::before {
+  content: "";
+  position: absolute;
+  inset: 20% 18%;
+  border-radius: 8px;
+  border: 2px solid rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.trophy-icon {
+  background: radial-gradient(circle at 30% 30%, #ffeb3b 0, #ff9100 40%, #ff1744 100%);
+}
+
+.trophy-icon::before {
+  content: "";
+  position: absolute;
+  inset: 22% 24%;
+  border-radius: 6px 6px 10px 10px;
+  border: 2px solid rgba(0, 0, 0, 0.85);
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.nav-btn.active {
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--text-primary);
+  transform: translateY(-2px);
+}
+
+.text-muted {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.center {
+  text-align: center;
+}
+
