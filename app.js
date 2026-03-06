@@ -1,45 +1,159 @@
-const MAX_SUPPLY = 1_000_000;
 const POINTS_PER_TAP = 1;
 
 const state = {
+  // user
+  user: null,
   userPoints: 0,
+
+  // global mining
   totalMined: 0,
-  currentScreen: "main",
+  maxSupply: 1_000_000,
   miningAvailable: true,
+
+  // ui
+  currentScreen: "main",
   tonConnectUI: null,
+
+  // config
+  botUsername: "",
+  refBonus: 150,
+  apiOk: false,
 };
 
 const tg = window.Telegram?.WebApp;
 
-document.addEventListener("DOMContentLoaded", () => {
-  if (tg) tg.ready();
+document.addEventListener("DOMContentLoaded", async () => {
+  if (tg) {
+    tg.ready();
+    tg.expand?.();
+    tg.disableVerticalSwipes?.();
+  }
 
-  restoreLocalState();
+  setupHaptics();
   setupNavigation();
+
+  // Prefer server sync. If Telegram initData not available (e.g., desktop browser),
+  // fallback to local state to keep demo working.
+  await loadConfig();
+  await syncMe();
+
   renderCurrentScreen();
   updatePointsHeader();
   initTonConnect();
   updateThemeByMiningState();
 });
 
-function restoreLocalState() {
+function setupHaptics() {
+  // Haptic on every button press (and tap-button).
+  document.addEventListener(
+    "click",
+    (e) => {
+      const target = e.target instanceof Element ? e.target.closest("button") : null;
+      if (!target) return;
+      // Tap button uses stronger haptic handled in tap logic
+      if (target.id === "tap-button") return;
+      hapticImpact("light");
+    },
+    true
+  );
+}
+
+function hapticImpact(style) {
+  try {
+    if (tg?.HapticFeedback?.impactOccurred) {
+      tg.HapticFeedback.impactOccurred(style);
+      return;
+    }
+  } catch {
+    // ignore
+  }
+
+  // fallback (works outside Telegram on many Android devices)
+  try {
+    if (navigator.vibrate) navigator.vibrate(12);
+  } catch {
+    // ignore
+  }
+}
+
+function initDataHeader() {
+  const initData = tg?.initData || "";
+  return initData ? { "x-telegram-init-data": initData } : {};
+}
+
+async function apiFetch(path, options = {}) {
+  const res = await fetch(path, {
+    ...options,
+    headers: {
+      "content-type": "application/json",
+      ...(options.headers || {}),
+      ...initDataHeader(),
+    },
+  });
+  if (!res.ok) throw new Error(`HTTP_${res.status}`);
+  return res.json();
+}
+
+async function loadConfig() {
+  try {
+    const data = await apiFetch("/api/config");
+    if (data?.ok) {
+      state.botUsername = data.botUsername || "";
+      state.maxSupply = Number(data.maxSupply || state.maxSupply);
+      state.refBonus = Number(data.refBonus || state.refBonus);
+    }
+  } catch {
+    // ignore, offline/demo mode
+  }
+}
+
+function restoreLocalFallback() {
   try {
     const savedUser = localStorage.getItem("vibe_tap_user_points");
     const savedTotal = localStorage.getItem("vibe_tap_total_mined");
     if (savedUser) state.userPoints = Number(savedUser) || 0;
     if (savedTotal) state.totalMined = Number(savedTotal) || 0;
-  } catch (e) {
-    console.warn("Local storage not available", e);
+  } catch {
+    // ignore
   }
-  state.miningAvailable = state.totalMined < MAX_SUPPLY;
+  state.miningAvailable = state.totalMined < state.maxSupply;
 }
 
-function persistState() {
+function persistLocalFallback() {
   try {
     localStorage.setItem("vibe_tap_user_points", String(state.userPoints));
     localStorage.setItem("vibe_tap_total_mined", String(state.totalMined));
+  } catch {
+    // ignore
+  }
+}
+
+async function syncMe() {
+  if (!tg?.initData) {
+    restoreLocalFallback();
+    state.apiOk = false;
+    return;
+  }
+
+  try {
+    const data = await apiFetch("/api/me");
+    if (!data?.ok) throw new Error("BAD_RESPONSE");
+
+    state.apiOk = true;
+    state.user = data.user || null;
+    state.userPoints = Number(data.points || 0);
+    state.totalMined = Number(data.totalMined || 0);
+    state.maxSupply = Number(data.maxSupply || state.maxSupply);
+    state.miningAvailable = !!data.miningAvailable;
+
+    // if ref bonus was awarded now, make it feel good
+    if (data.referral?.bonusAwardedNow) {
+      hapticImpact("medium");
+    }
   } catch (e) {
-    /* ignore */
+    console.warn("API /api/me failed, fallback to local", e);
+    restoreLocalFallback();
+    state.apiOk = false;
   }
 }
 
@@ -84,15 +198,19 @@ function renderCurrentScreen() {
 }
 
 function renderMainScreen() {
-  const remaining = Math.max(0, MAX_SUPPLY - state.totalMined);
+  const remaining = Math.max(0, state.maxSupply - state.totalMined);
   const disabled = !state.miningAvailable;
 
   return `
     <section class="main-screen">
-      <div>
-        <div class="tap-info">
-          Нажимай на логотип, чтобы майнить поинты
-          <div class="tap-counter">${state.userPoints} поинтов</div>
+      <div class="hero-top">
+        <div class="hero-badge">
+          <span class="hero-badge-dot"></span>
+          <span>${state.apiOk ? "Синхронизация: ON" : "Синхронизация: OFF (demo)"}</span>
+        </div>
+        <div class="hero-balance">
+          <div class="hero-balance-label">Ваши поинты</div>
+          <div class="hero-balance-value">${state.userPoints.toLocaleString("ru-RU")}</div>
         </div>
       </div>
       <div class="tap-button-wrapper">
@@ -117,10 +235,34 @@ function bindMainScreenEvents() {
   const btn = document.getElementById("tap-button");
   if (!btn) return;
 
-  btn.addEventListener("click", () => {
+  btn.addEventListener("click", async () => {
     if (!state.miningAvailable) return;
 
-    const remaining = MAX_SUPPLY - state.totalMined;
+    // Tap should feel stronger
+    hapticImpact("medium");
+
+    if (state.apiOk) {
+      try {
+        const data = await apiFetch("/api/tap", { method: "POST", body: "{}" });
+        if (!data?.ok) throw new Error("BAD_RESPONSE");
+
+        state.userPoints = Number(data.points || state.userPoints);
+        state.totalMined = Number(data.totalMined || state.totalMined);
+        state.maxSupply = Number(data.maxSupply || state.maxSupply);
+        state.miningAvailable = !!data.miningAvailable;
+
+        updatePointsHeader();
+        updateThemeByMiningState();
+        renderCurrentScreen();
+        return;
+      } catch (e) {
+        console.warn("API /api/tap failed, fallback local", e);
+        state.apiOk = false;
+      }
+    }
+
+    // Local fallback
+    const remaining = state.maxSupply - state.totalMined;
     if (remaining <= 0) {
       state.miningAvailable = false;
       onMiningFinished();
@@ -130,26 +272,14 @@ function bindMainScreenEvents() {
     const amount = Math.min(POINTS_PER_TAP, remaining);
     state.userPoints += amount;
     state.totalMined += amount;
-
     updatePointsHeader();
-    persistState();
+    persistLocalFallback();
 
-    const counter = document.querySelector(".tap-counter");
-    if (counter) {
-      counter.textContent = `${state.userPoints} поинтов`;
-    }
-
-    const remainingNow = MAX_SUPPLY - state.totalMined;
-    const remainingEl = document.querySelector(".tap-remaining");
-    if (remainingEl && remainingNow >= 0) {
-      remainingEl.innerHTML = `<span>Доступно к майнингу: <b>${remainingNow.toLocaleString(
-        "ru-RU"
-      )}</b> поинтов</span>`;
-    }
-
-    if (state.totalMined >= MAX_SUPPLY) {
+    if (state.totalMined >= state.maxSupply) {
       state.miningAvailable = false;
       onMiningFinished();
+    } else {
+      renderCurrentScreen();
     }
   });
 }
@@ -187,7 +317,7 @@ function renderWalletScreen() {
           Эти поинты будут конвертированы в токены после окончания майнинга.
         </div>
         <div class="wallet-balance-row">
-          <div class="wallet-balance-value">${state.userPoints}</div>
+          <div class="wallet-balance-value">${state.userPoints.toLocaleString("ru-RU")}</div>
           <div class="wallet-balance-caption">поинтов</div>
         </div>
       </div>
@@ -219,6 +349,7 @@ function bindWalletScreenEvents() {
 }
 
 function initTonConnect() {
+  // ВАЖНО: замените на ваш HTTPS домен (где лежит tonconnect-manifest.json)
   const manifestUrl = "https://your-domain.com/tonconnect-manifest.json";
 
   try {
@@ -230,48 +361,21 @@ function initTonConnect() {
   }
 }
 
-function getMockLeaderboard() {
-  const me = tg?.initDataUnsafe?.user;
-  const myName = me ? `${me.first_name || ""} ${me.last_name || ""}`.trim() : "Вы";
+async function getLeaderboard() {
+  if (!state.apiOk) {
+    const me = tg?.initDataUnsafe?.user;
+    const myName = me ? `${me.first_name || ""} ${me.last_name || ""}`.trim() : "Вы";
+    return [
+      { tgId: "me", name: myName || "Вы", points: state.userPoints },
+      { tgId: 1, name: "Demo user", points: Math.max(0, state.userPoints - 10) },
+    ].sort((a, b) => b.points - a.points);
+  }
 
-  const base = [
-    { id: 1, name: "Whale", points: 125_000 },
-    { id: 2, name: "Farmer", points: 80_500 },
-    { id: 3, name: "Diamond Hands", points: 45_300 },
-    { id: 4, name: "Vibe Player", points: 21_700 },
-  ];
-
-  base.push({
-    id: "me",
-    name: myName || "Вы",
-    points: state.userPoints,
-  });
-
-  return base.sort((a, b) => b.points - a.points).slice(0, 50);
+  const data = await apiFetch("/api/leaderboard");
+  return data?.leaders || [];
 }
 
 function renderLeaderboardScreen() {
-  const leaders = getMockLeaderboard();
-  const itemsHtml = leaders
-    .map((user, index) => {
-      const rank = index + 1;
-      let rankClass = "";
-      if (rank === 1) rankClass = "rank-1";
-      if (rank === 2) rankClass = "rank-2";
-      if (rank === 3) rankClass = "rank-3";
-
-      const youBadge = user.id === "me" ? " (Вы)" : "";
-
-      return `
-        <div class="leaderboard-row ${rankClass}">
-          <span class="leaderboard-rank">#${rank}</span>
-          <span class="leaderboard-name">${user.name}${youBadge}</span>
-          <span class="leaderboard-points">${user.points.toLocaleString("ru-RU")}</span>
-        </div>
-      `;
-    })
-    .join("");
-
   return `
     <section class="leaderboard-screen">
       <div class="card">
@@ -279,23 +383,24 @@ function renderLeaderboardScreen() {
           <div>
             <div class="leaderboard-title">Лидерборд</div>
             <div class="leaderboard-subtitle">
-              Соревнуйтесь за топ-3 места с золотым, серебряным и бронзовым свечением.
+              Реальные пользователи. Топ‑3 — золото/серебро/бронза.
             </div>
           </div>
+          <button id="lb-refresh" class="btn-ghost" type="button">Обновить</button>
         </div>
-        <div class="leaderboard-list">
-          ${itemsHtml}
+        <div id="leaderboard-list" class="leaderboard-list">
+          <div class="text-muted">Загрузка…</div>
         </div>
       </div>
 
       <div class="card">
         <div class="card-title">Пригласить друзей</div>
         <div class="card-subtitle">
-          Пригласите друга и получите <b>+150 поинтов</b> на баланс за каждого.
+          Пригласите друга и получите <b>+${state.refBonus}</b> поинтов на баланс.
         </div>
-        <button id="invite-btn" class="btn-primary">Пригласить друга</button>
+        <button id="invite-btn" class="btn-primary">Invite frens</button>
         <p class="text-muted" style="margin-top:8px;">
-          В реальном приложении здесь можно открыть реферальную ссылку или Telegram-инвайт через WebApp API.
+          Ссылка ведет в вашего бота и открывает Mini App с реф‑параметром.
         </p>
       </div>
     </section>
@@ -303,25 +408,87 @@ function renderLeaderboardScreen() {
 }
 
 function bindLeaderboardScreenEvents() {
+  const refreshBtn = document.getElementById("lb-refresh");
+  if (refreshBtn) {
+    refreshBtn.addEventListener("click", () => {
+      hydrateLeaderboard().catch((e) => console.warn("hydrateLeaderboard failed", e));
+    });
+  }
+
   const inviteBtn = document.getElementById("invite-btn");
-  if (!inviteBtn) return;
+  if (inviteBtn) {
+    inviteBtn.addEventListener("click", async () => {
+      let refUrl = "";
 
-  inviteBtn.addEventListener("click", () => {
-    const refUrl = "https://t.me/your_bot?start=ref123";
+      if (state.apiOk) {
+        try {
+          const data = await apiFetch("/api/invite", { method: "POST", body: "{}" });
+          if (data?.ok && data.link) refUrl = data.link;
+        } catch (e) {
+          console.warn("API /api/invite failed", e);
+        }
+      }
 
-    if (tg && tg.openTelegramLink) {
-      tg.openTelegramLink(refUrl);
-    } else {
-      window.open(refUrl, "_blank");
-    }
+      if (!refUrl && state.botUsername && tg?.initDataUnsafe?.user?.id) {
+        const payload = `ref_${tg.initDataUnsafe.user.id}`;
+        refUrl = `https://t.me/${state.botUsername}?startapp=${encodeURIComponent(payload)}`;
+      }
 
-    state.userPoints += 150;
-    updatePointsHeader();
-    persistState();
+      if (!refUrl) {
+        refUrl = "https://t.me/";
+      }
 
-    if (state.currentScreen === "leaderboard") {
-      renderCurrentScreen();
-    }
-  });
+      if (tg?.openTelegramLink) tg.openTelegramLink(refUrl);
+      else window.open(refUrl, "_blank");
+    });
+  }
+
+  hydrateLeaderboard().catch((e) => console.warn("hydrateLeaderboard failed", e));
+}
+
+async function hydrateLeaderboard() {
+  const list = document.getElementById("leaderboard-list");
+  if (!list) return;
+  list.innerHTML = `<div class="text-muted">Загрузка…</div>`;
+
+  let leaders = [];
+  try {
+    leaders = await getLeaderboard();
+  } catch (e) {
+    console.warn("leaderboard fetch failed", e);
+  }
+
+  const myId = tg?.initDataUnsafe?.user?.id;
+  const itemsHtml = (leaders || [])
+    .map((user, index) => {
+      const rank = index + 1;
+      let rankClass = "";
+      if (rank === 1) rankClass = "rank-1";
+      if (rank === 2) rankClass = "rank-2";
+      if (rank === 3) rankClass = "rank-3";
+
+      const isMe = myId && Number(user.tgId) === Number(myId);
+      const youBadge = isMe ? " (Вы)" : "";
+
+      return `
+        <div class="leaderboard-row ${rankClass} ${isMe ? "is-me" : ""}">
+          <span class="leaderboard-rank">#${rank}</span>
+          <span class="leaderboard-name">${escapeHtml(user.name || "User")}${youBadge}</span>
+          <span class="leaderboard-points">${Number(user.points || 0).toLocaleString("ru-RU")}</span>
+        </div>
+      `;
+    })
+    .join("");
+
+  list.innerHTML = itemsHtml || `<div class="text-muted">Пока нет игроков.</div>`;
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
